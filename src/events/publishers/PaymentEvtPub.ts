@@ -1,16 +1,9 @@
-import { Producer } from "kafkajs";
 import { kafkaProducer } from "../../config/kafka";
 import { Invoice, Transaction } from "../../types";
 
 export class PaymentEventPublisher {
-  private producer: Producer;
-
-  constructor() {
-    this.producer = kafkaProducer;
-  }
-
-  async publishInvoiceCreated(invoice: Invoice): Promise<void> {
-    await this.producer.send({
+  static async publishInvoiceCreated(invoice: Invoice) {
+    await kafkaProducer.send({
       topic: "payment-events",
       messages: [
         {
@@ -25,11 +18,11 @@ export class PaymentEventPublisher {
     });
   }
 
-  async publishPaymentSuccess(
+  static async publishPaymentSuccess(
     invoice: Invoice,
     transaction: Transaction
-  ): Promise<void> {
-    await this.producer.send({
+  ) {
+    await kafkaProducer.send({
       topic: "payment-events",
       messages: [
         {
@@ -44,8 +37,8 @@ export class PaymentEventPublisher {
     });
   }
 
-  async publishPaymentFailed(invoice: Invoice, error: any): Promise<void> {
-    await this.producer.send({
+  static async publishPaymentFailed(invoice: Invoice, error: any) {
+    await kafkaProducer.send({
       topic: "payment-events",
       messages: [
         {

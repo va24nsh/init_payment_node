@@ -36,9 +36,7 @@ export class PaymentRepository {
     });
   }
 
-  static async createTransaction(
-    transaction: Partial<Transaction>
-  ) {
+  static async createTransaction(transaction: Partial<Transaction>) {
     return await prisma.transaction.create({
       data: {
         invoiceId: transaction.invoiceId!,
@@ -65,6 +63,22 @@ export class PaymentRepository {
       include: {
         transactions: true,
       },
+    });
+  }
+
+  static async findTransactionById(id: string) {
+    return await prisma.transaction.findUnique({
+      where: { id },
+    });
+  }
+
+  static async updateTransactionStatus(
+    id: string,
+    status: Transaction["status"]
+  ) {
+    return await prisma.transaction.update({
+      where: { id },
+      data: { status },
     });
   }
 
