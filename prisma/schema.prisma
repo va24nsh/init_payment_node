@@ -1,0 +1,44 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Invoice {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  amount      Float
+  currency    String   @default("USD")
+  status      String   @default("pending") // pending, paid, failed, refunded
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  paidAt      DateTime? @map("paid_at")
+  
+  transactions Transaction[]
+  
+  @@map("invoices")
+}
+
+model Transaction {
+  id             String   @id @default(cuid())
+  invoiceId      String   @map("invoice_id")
+  userId         String   @map("user_id")
+  amount         Float
+  paymentMethod  String   @map("payment_method") // credit_card, paypal, etc.
+  status         String   @default("pending") // pending, completed, failed
+  gatewayResponse Json?    @map("gateway_response")
+  createdAt      DateTime @default(now()) @map("created_at")
+  
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  
+  @@map("transactions")
+}
