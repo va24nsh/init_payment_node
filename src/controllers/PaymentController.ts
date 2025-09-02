@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { PaymentService } from "../services/PaymentService";
 import { PaymentRequest } from "../types";
-import "../types/express";
 
 export class PaymentController {
   constructor(private paymentService: PaymentService) {}

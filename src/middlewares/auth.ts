@@ -2,6 +2,17 @@ import { Request, Response, NextFunction } from "express";
 import { verify } from "jsonwebtoken";
 import { redisClient } from "../config/redis";
 
+declare global {
+  namespace Express {
+    interface Request {
+      user: {
+        id: string;
+        email: string;
+      }
+    }
+  }
+}
+
 export const authenticateToken = async (
   req: Request,
   res: Response,

@@ -3,8 +3,7 @@ import * as protoLoader from "@grpc/proto-loader";
 import path from "path";
 import { Invoice, Transaction } from "../../types";
 
-// Load protobuf
-const PROTO_PATH = path.join(__dirname, "../../proto/email_service.proto");
+const PROTO_PATH = path.join(__dirname, "../proto/email_service.proto");
 const packageDefinition = protoLoader.loadSync(PROTO_PATH);
 const emailProto = grpc.loadPackageDefinition(packageDefinition).email;
 
