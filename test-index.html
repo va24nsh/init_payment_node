@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Service Test</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            background: #f7f8fc;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .section {
+            margin-bottom: 30px;
+            border-bottom: 1px solid #e1e4e8;
+            padding-bottom: 20px;
+        }
+
+        h1,
+        h2 {
+            color: #2c3e50;
+        }
+
+        button {
+            background-color: #6772e5;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #5469d4;
+        }
+
+        .card {
+            border: 1px solid #e1e4e8;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+            background-color: white;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .response {
+            background-color: #f6f8fa;
+            border: 1px solid #e1e4e8;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            margin-top: 10px;
+            max-height: 200px;
+            overflow: auto;
+        }
+
+        .error {
+            color: #cb2431;
+            background-color: #ffeef0;
+            border-color: #ffdce0;
+        }
+
+        .success {
+            color: #22863a;
+            background-color: #f0fff4;
+            border-color: #dcffe4;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Payment Service Test</h1>
+
+        <div class="section">
+            <h2>1. Authentication</h2>
+            <div>
+                <input type="text" id="email" placeholder="Email" value="test@example.com">
+                <input type="password" id="password" placeholder="Password" value="password">
+                <button onclick="authenticate()">Get Auth Token</button>
+                <div id="auth-response" class="response"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>2. Create Invoice</h2>
+            <div>
+                <input type="number" id="amount" placeholder="Amount" value="1000">
+                <textarea id="description" placeholder="Description">Test payment for services rendered</textarea>
+                <button onclick="createInvoice()">Create Invoice</button>
+                <div id="invoice-response" class="response"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>3. Create Razorpay Order</h2>
+            <div>
+                <input type="text" id="invoiceId" placeholder="Invoice ID from step 2">
+                <button onclick="createOrder()">Create Order</button>
+                <div id="order-response" class="response"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>4. Process Payment</h2>
+            <div>
+                <button onclick="openRazorpay" id="pay-button" disabled>Open Razorpay</button>
+                <div id="payment-response" class="response"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>5. View Your Invoices & Transactions</h2>
+            <div>
+                <button onclick="getInvoices()">Get Invoices</button>
+                <button onclick="getTransactions()">Get Transactions</button>
+                <div id="invoices-response" class="response"></div>
+                <div id="transactions-response" class="response"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = '';
+        let orderData = null;
+
+        // Base URL of your API
+        const API_BASE_URL = 'http://localhost:5002';
+
+        // Authenticate and get token
+        async function authenticate() {
+            const responseDiv = document.getElementById('auth-response');
+            try {
+                // This is mocked since you're likely using a separate auth service
+                // Replace with actual auth call if needed
+                responseDiv.textContent = "Authentication successful (mocked)";
+                responseDiv.className = "response success";
+
+                // In a real scenario, you'd make an API call:
+                // const response = await axios.post('http://auth-service/login', {
+                //   email: document.getElementById('email').value,
+                //   password: document.getElementById('password').value
+                // });
+
+                // For testing purposes, we're creating a mock token
+                authToken = 'mock_jwt_token_for_testing_' + Date.now();
+
+                // Show success and store token
+                responseDiv.textContent = `Authentication successful! Token: ${authToken}`;
+
+                // Enable all buttons that require auth
+                enableAuthButtons();
+            } catch (error) {
+                responseDiv.textContent = `Error: ${error.response?.data?.message || error.message}`;
+                responseDiv.className = "response error";
+            }
+        }
+
+        // Create a new invoice
+        async function createInvoice() {
+            const responseDiv = document.getElementById('invoice-response');
+            try {
+                const response = await axios.post(`${API_BASE_URL}/invoices`, {
+                    amount: parseFloat(document.getElementById('amount').value),
+                    description: document.getElementById('description').value
+                }, {
+                    headers: { Authorization: `Bearer ${authToken}` }
+                });
+
+                responseDiv.textContent = JSON.stringify(response.data, null, 2);
+                responseDiv.className = "response success";
+
+                // Auto-fill the invoice ID for the next step
+                document.getElementById('invoiceId').value = response.data.id;
+            } catch (error) {
+                responseDiv.textContent = `Error: ${JSON.stringify(error.response?.data || error.message)}`;
+                responseDiv.className = "response error";
+            }
+        }
+
+        // Create a Razorpay order for an invoice
+        async function createOrder() {
+            const responseDiv = document.getElementById('order-response');
+            const invoiceId = document.getElementById('invoiceId').value;
+
+            if (!invoiceId) {
+                responseDiv.textContent = "Please enter an Invoice ID";
+                responseDiv.className = "response error";
+                return;
+            }
+
+            try {
+                const response = await axios.post(`${API_BASE_URL}/razorpay/order`, {
+                    invoiceId: invoiceId
+                }, {
+                    headers: { Authorization: `Bearer ${authToken}` }
+                });
+
+                orderData = response.data;
+                responseDiv.textContent = JSON.stringify(response.data, null, 2);
+                responseDiv.className = "response success";
+
+                // Enable payment button
+                document.getElementById('pay-button').disabled = false;
+            } catch (error) {
+                responseDiv.textContent = `Error: ${JSON.stringify(error.response?.data || error.message)}`;
+                responseDiv.className = "response error";
+            }
+        }
+
+        // Open Razorpay checkout
+        function openRazorpay() {
+            if (!orderData || !orderData.id) {
+                alert("Please create an order first");
+                return;
+            }
+
+            const options = {
+                key: "rzp_test_your_test_key", // Replace with your actual test key
+                amount: orderData.amount,
+                currency: orderData.currency,
+                name: "Your Company",
+                description: "Payment for your services",
+                order_id: orderData.id,
+                handler: function (response) {
+                    // Process the successful payment
+                    processPayment(response.razorpay_payment_id, response.razorpay_order_id, response.razorpay_signature);
+                },
+                prefill: {
+                    name: "Customer Name",
+                    email: document.getElementById('email').value,
+                    contact: "9999999999"
+                },
+                theme: {
+                    color: "#6772e5"
+                }
+            };
+
+            const razorpayInstance = new Razorpay(options);
+            razorpayInstance.open();
+        }
+
+        // Process payment after Razorpay checkout
+        async function processPayment(paymentId, orderId, signature) {
+            const responseDiv = document.getElementById('payment-response');
+            try {
+                const response = await axios.post(`${API_BASE_URL}/payments`, {
+                    invoiceId: document.getElementById('invoiceId').value,
+                    paymentMethod: "razorpay",
+                    paymentDetails: {
+                        orderId: orderId,
+                        paymentId: paymentId,
+                        signature: signature
+                    }
+                }, {
+                    headers: { Authorization: `Bearer ${authToken}` }
+                });
+
+                responseDiv.textContent = JSON.stringify(response.data, null, 2);
+                responseDiv.className = "response success";
+            } catch (error) {
+                responseDiv.textContent = `Error: ${JSON.stringify(error.response?.data || error.message)}`;
+                responseDiv.className = "response error";
+            }
+        }
+
+        // Get user invoices
+        async function getInvoices() {
+            const responseDiv = document.getElementById('invoices-response');
+            try {
+                const response = await axios.get(`${API_BASE_URL}/invoices`, {
+                    headers: { Authorization: `Bearer ${authToken}` }
+                });
+
+                responseDiv.textContent = JSON.stringify(response.data, null, 2);
+                responseDiv.className = "response success";
+            } catch (error) {
+                responseDiv.textContent = `Error: ${JSON.stringify(error.response?.data || error.message)}`;
+                responseDiv.className = "response error";
+            }
+        }
+
+        // Get user transactions
+        async function getTransactions() {
+            const responseDiv = document.getElementById('transactions-response');
+            try {
+                const response = await axios.get(`${API_BASE_URL}/transactions`, {
+                    headers: { Authorization: `Bearer ${authToken}` }
+                });
+
+                responseDiv.textContent = JSON.stringify(response.data, null, 2);
+                responseDiv.className = "response success";
+            } catch (error) {
+                responseDiv.textContent = `Error: ${JSON.stringify(error.response?.data || error.message)}`;
+                responseDiv.className = "response error";
+            }
+        }
+
+        // Enable buttons that require authentication
+        function enableAuthButtons() {
+            // Enable all buttons that need auth
+            const authButtons = document.querySelectorAll('button:not(#pay-button)');
+            authButtons.forEach(button => {
+                if (button.id !== "pay-button") {
+                    button.disabled = false;
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

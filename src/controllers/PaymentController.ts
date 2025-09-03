@@ -102,7 +102,9 @@ export class PaymentController {
       const { invoiceId } = req.body;
       const user = req.user;
 
-      const invoice = await PaymentService.findInvoiceById(invoiceId) as Invoice;
+      const invoice = (await PaymentService.findInvoiceById(
+        invoiceId
+      )) as Invoice;
       if (!invoice) {
         return res.status(404).json({
           success: false,
@@ -117,10 +119,7 @@ export class PaymentController {
         });
       }
 
-      const order = await PaymentService.createRazorpayOrder(
-        invoice,
-        user
-      );
+      const order = await PaymentService.createRazorpayOrder(invoice, user);
 
       res.status(200).json({
         success: true,
@@ -129,68 +128,36 @@ export class PaymentController {
     } catch (error) {
       res.status(400).json({
         success: false,
-        error: error instanceof Error ? error.message : "Internal Server error at payment micro-service",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Internal Server error at payment micro-service",
       });
     }
   }
 
   static async processRazorpayWebhook(req: Request, res: Response) {
     try {
-      const { event, payload } = req.body;
+      // Create the event object in the format expected by the service
+      const event = {
+        headers: req.headers,
+        body: req.body,
+      };
 
-      // Verify webhook signature
-      const crypto = require("crypto");
-      const hmac = crypto.createHmac(
-        "sha256",
-        process.env.RAZORPAY_WEBHOOK_SECRET!
-      );
-      hmac.update(JSON.stringify(req.body));
-      const generatedSignature = hmac.digest("hex");
+      // Let the service handle all webhook processing
+      const result = await PaymentService.handleRazorpayWebhook(event);
 
-      const razorpaySignature = req.headers["x-razorpay-signature"] as string;
-
-      if (generatedSignature !== razorpaySignature) {
-        return res.status(400).json({
-          success: false,
-          error: "Invalid webhook signature",
-        });
-      }
-
-      // Handle different webhook events
-      switch (event) {
-        case "payment.captured":
-          // Handle successful payment
-          await PaymentController.handlePaymentCaptured(payload.payment.entity);
-          break;
-        case "payment.failed":
-          // Handle failed payment
-          await PaymentController.handlePaymentFailed(payload.payment.entity);
-          break;
-        // case "refund.processed":
-        //   // Handle refund
-        //   await PaymentController.handleRefundProcessed(payload.refund.entity);
-          // break;
-        default:
-          console.log(`Unhandled webhook event: ${event}`);
-      }
-
-      res.status(200).json({ success: true });
+      res.status(200).json({
+        success: true,
+        message: result.message,
+      });
     } catch (error) {
       console.error("Webhook processing error:", error);
       res.status(400).json({
         success: false,
-        error: error instanceof Error ? error.message : "Webhook processing error",
+        error:
+          error instanceof Error ? error.message : "Webhook processing error",
       });
     }
-  }
-
-  private static async handlePaymentCaptured(payment: any) {
-    // Implement logic to handle successful payment
-    // Update invoice and transaction status
-  }
-
-  private static async handlePaymentFailed(payment: any) {
-    // Implement logic to handle failed payment
-    // Update invoice and transaction status
   }
 }

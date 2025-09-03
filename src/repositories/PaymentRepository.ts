@@ -72,13 +72,37 @@ export class PaymentRepository {
     });
   }
 
+  static async findTransactionByGatewayId(gatewayId: string) {
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        gatewayResponse: {
+          path: ["transactionId"],
+          equals: gatewayId,
+        },
+      },
+    });
+
+    return transactions[0];
+  }
+
   static async updateTransactionStatus(
     id: string,
-    status: Transaction["status"]
+    status: Transaction["status"],
+    additionalData?: any
   ) {
+    const updateData: any = { status };
+
+    if (additionalData) {
+      updateData.gatewayResponse = {
+        ...((await prisma.transaction.findUnique({ where: { id } }))
+          ?.gatewayResponse as any),
+        ...additionalData,
+      };
+    }
+
     return await prisma.transaction.update({
       where: { id },
-      data: { status },
+      data: updateData,
     });
   }
 

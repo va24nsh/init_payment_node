@@ -1,9 +1,11 @@
 import express from "express";
 import { authenticateToken } from "./middlewares/auth";
 import { PaymentController } from "./controllers/PaymentController";
+import CORS from "cors";
 
 export const app = express();
 app.use(express.json());
+app.use(CORS());
 
 app.post("/invoices", authenticateToken, PaymentController.createInvoice);
 app.post("/payments", authenticateToken, PaymentController.processPayment);
